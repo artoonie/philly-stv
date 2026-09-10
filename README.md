@@ -2,6 +2,8 @@
 
 A one-page simulator: what would Philadelphia City Council look like if seats were elected proportionally with ranked-choice (single transferable vote, STV) ballots, compared with today's 10 single-member districts plus 7 at-large seats by limited voting?
 
+Link previews use `site/og.png`; the deploy workflow rewrites the `og:image` tag to the absolute Pages URL. For the repository card on GitHub itself, upload the same image under Settings → General → Social preview (GitHub has no API for that).
+
 Live site: enable GitHub Pages (Settings → Pages → Source: *GitHub Actions*) and push to `main`; `.github/workflows/deploy.yml` runs the tests and publishes `site/`.
 
 ## Run locally
@@ -11,6 +13,7 @@ npm test                 # STV / limited-vote / plurality / slider-math unit tes
 npm run test:browser     # headless Chrome: drags a slider and checks the page follows (scripts/browser.js drives Chrome over DevTools protocol)
 npm run serve            # http://localhost:8080 (plain static files, no build step; must be served over HTTP, file:// will not work)
 npm run screenshot       # headless Chrome screenshots of several states into ./screenshots
+npm run social           # regenerate site/og.png (1200×630 link preview) and the PNG favicons from site/favicon.svg
 ```
 
 ## How it works

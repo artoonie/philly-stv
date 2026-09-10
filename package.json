@@ -9,6 +9,7 @@
     "serve": "python3 -m http.server 8080 --directory site",
     "screenshot": "node scripts/screenshot.js",
     "review": "node scripts/screenshot.js && node scripts/review.js",
-    "test:browser": "node tests/drag.browser.js"
+    "test:browser": "node tests/drag.browser.js",
+    "social": "node scripts/social.js"
   }
 }

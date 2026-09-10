@@ -42,6 +42,11 @@ export async function launch({ port = 9333, width = 1280, height = 900 } = {}) {
       const r = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true, ...(clip ? { clip } : {}) });
       writeFileSync(file, Buffer.from(r.result.data, 'base64'));
     },
+    async screenshotClip(file, { x, y, w, h, scale = 1 }) {
+      const { writeFileSync } = await import('node:fs');
+      const r = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true, clip: { x, y, width: w, height: h, scale } });
+      writeFileSync(file, Buffer.from(r.result.data, 'base64'));
+    },
     async setViewport(width, height, mobile = false) { await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile }); },
     consoleErrors() { return events.filter(e => e.method === 'Runtime.exceptionThrown').map(e => e.params.exceptionDetails.exception?.description || e.params.exceptionDetails.text); },
     async close() { ws.close(); proc.kill(); },

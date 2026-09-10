@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- a council ring: three groups sharing seats proportionally -->
+  <rect width="64" height="64" rx="14" fill="#fcfcfb"/>
+  <g transform="translate(32 32)" fill="none" stroke-width="11" stroke-linecap="butt">
+    <circle r="20" stroke="#2a78d6" stroke-dasharray="72 200" transform="rotate(-90)"/>
+    <circle r="20" stroke="#4a3aa7" stroke-dasharray="30 200" stroke-dashoffset="-72" transform="rotate(-90)"/>
+    <circle r="20" stroke="#e34948" stroke-dasharray="23.66 200" stroke-dashoffset="-102" transform="rotate(-90)"/>
+  </g>
+</svg>
