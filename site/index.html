@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Philly Council, Proportionally</title>
+<meta name="description" content="Simulate how Philadelphia City Council would look if seats were elected proportionally with ranked-choice (STV) ballots.">
+<link rel="stylesheet" href="src/styles.css">
+<script src="vendor/d3.v7.min.js"></script>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <p class="kicker">Philadelphia City Council · a simulation</p>
+    <h1>What if City Council actually looked like Philly?</h1>
+    <p class="lede">Today, 10 districts each pick one winner and the 7 at-large seats are split by a fixed rule: 5 for the biggest party, 2 for the runner-up. Below, compare that with <strong>proportional representation</strong>. The version shown here is the <em>single transferable vote</em> (STV): voters just rank candidates in order of preference, it is a form of ranked-choice voting, and Philadelphia's voting machines already support it.</p>
+    <p class="disclaimer"><strong>This is a simulation, not a prediction.</strong> To keep it simple, every voter in a group is assumed to vote only for candidates from that group (a Black voter always ranks Black candidates, a renter always ranks renters, and so on). Real people are not that predictable; the point is to see how each <em>system</em> responds when the electorate changes.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="who" class="panel">
+    <div class="section-head">
+      <h2><span class="step">1</span> Who votes?</h2>
+      <p>Pick how to group voters, then drag the sliders. Starting values are real data for each council district.</p>
+    </div>
+    <div id="type-chips" class="chips" role="tablist" aria-label="Group voters by"></div>
+    <div id="city-controls" class="city-controls"></div>
+    <details id="district-controls-wrap" class="district-details">
+      <summary>Adjust individual districts</summary>
+      <p class="hint">Each district's sliders move that district only. The city-wide sliders above move every district by the same proportion.</p>
+      <div id="district-controls"></div>
+    </details>
+  </section>
+
+  <section id="results" class="panel">
+    <div class="section-head">
+      <h2><span class="step">2</span> Who wins?</h2>
+      <p>Four ways to elect the council. The score is how closely the council mirrors the voters (100 = a perfect match).</p>
+    </div>
+    <div id="viz-root"></div>
+  </section>
+
+  <section id="method" class="panel">
+    <div class="section-head">
+      <h2><span class="step">3</span> Under the hood</h2>
+      <p>Everything a skeptic should want to check: how each seat was awarded, every STV count round, the assumptions, and the data.</p>
+    </div>
+    <div id="details-root"></div>
+    <details class="assumptions" open>
+      <summary>Assumptions and known limits</summary>
+      <ul>
+        <li><strong>Bloc voting.</strong> Every voter ranks only candidates from their own group, and every group runs enough candidates to fill every seat. This exaggerates how “tribal” voting is. Real STV elections transfer votes across groups, which usually helps small groups a little more than shown here.</li>
+        <li><strong>Party is measured by the 2023 at-large council vote.</strong> Voters could mark up to 5 names, so a Democrat and a Working Families candidate can share one ballot, and the parties fielded 5, 2 and 2 candidates. Dividing each party’s votes by its number of candidates is the fairest simple reading; the raw totals (77% Democratic) would flatter the largest party and the top-candidate reading gives the same shares within a point. Switch to “Party (2024 presidential)” to see the lopsided general-election picture instead.</li>
+        <li><strong>People, not ballots.</strong> Census categories count residents (adults, households or workers, as labelled), not registered voters or turnout. Party uses actual votes cast. Non-citizens are included in census counts.</li>
+        <li><strong>Today's at-large rule.</strong> Philadelphia's charter lets each voter choose 5 of the 7 at-large seats and each party nominate only 5. Under bloc voting that hands the largest group 5 seats and the second-largest 2, whatever their size. That is exactly how it has played out for parties (5 Democrats + 2 others every cycle); for other groupings it is a simplification.</li>
+        <li><strong>Districts.</strong> Single-member districts are decided by plurality: the biggest group in the district wins. The five combined districts simply pair today's districts with their neighbours (1+2, 3+4, 5+7, 8+9, 6+10); no lines were redrawn.</li>
+        <li><strong>STV count.</strong> Droop quota, weighted inclusive Gregory surplus transfers, lowest candidate eliminated when nobody reaches quota. Ties are broken in favour of the group listed first, which never changed a result in the default data.</li>
+        <li><strong>One dimension at a time.</strong> A voter is only a party, or only a race, or only a renter. Real coalitions cut across all of these.</li>
+        <li><strong>Groups of five or fewer.</strong> Small “Other” buckets are kept so the totals add to 100%, but a 4% group cannot expect a seat under any system with fewer than about 25 seats.</li>
+      </ul>
+    </details>
+    <div id="sources-root" class="sources"></div>
+  </section>
+</main>
+
+<footer class="wrap foot">
+  <p>Open source. Built with D3. Boundaries: City of Philadelphia council districts (2024 map). Code is Open Source on <a href="https://github.com/artoonie/philly-stv" target="_blank" rel="noopener">Armin Samii's Github</a>. Advocate for RCV by joining <a href="https://www.mohpa.org/ranked-choice-voting" target="_blank" rel="noopener">March on Harrisburg</a>.</p>
+</footer>
+<script>
+  // ES modules cannot load over file://; point people at a local server instead of a blank page.
+  if (location.protocol === 'file:') {
+    document.querySelector('#viz-root').innerHTML = '<div class="verdict"><b>Open this page over HTTP, not by double-clicking the file.</b> Browsers block JavaScript modules on <code>file://</code> URLs. From the project folder run <code>npm run serve</code> (or <code>python3 -m http.server 8080 --directory site</code>) and open <a href="http://localhost:8080">http://localhost:8080</a>.</div>';
+  }
+</script>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

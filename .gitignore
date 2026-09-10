@@ -1,0 +1,6 @@
+
+scripts/.cache/
+node_modules/
+.venv/
+screenshots/*.png
+.DS_Store
