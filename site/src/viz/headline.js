@@ -47,10 +47,10 @@ registerViz({
     vl.innerHTML = groups.map(g => `<span style="white-space:nowrap"><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${colors[g]};margin-right:4px"></i>${g} ${pct(city[g])}</span>`).join(' &nbsp; ');
     vc.appendChild(vl);
     cards.appendChild(vc);
-    const best = Math.max(...results.map(r => r.metrics.match));
+    const best = Math.max(...results.filter(r => r.system.stv).map(r => r.metrics.match), -1);
     for (const r of results) {
       const c = document.createElement('div'); c.className = 'card' + (r.system.stv && r.metrics.match === best ? ' best' : '');
-      c.innerHTML = `<h4>${r.system.short}${r.system.stv ? '<span class="stv-tag">STV</span>' : ''}</h4><div class="sub">${r.system.detail}</div>`;
+      c.innerHTML = `<h4>${r.system.short}${r.system.stv ? '<span class="stv-tag">STV</span>' : ''}</h4><div class="sub">${r.system.summary}</div>`;
       const seatCounts = Object.fromEntries(groups.map(g => [g, r.seats[g]]));
       donut(c, groups, seatCounts, colors, { label: 'seats', reference: city });
       const score = document.createElement('div'); score.className = 'score';
@@ -66,20 +66,27 @@ registerViz({
     }
     el.appendChild(cards);
     // one-sentence verdict for people who won't read anything else
-    const today = results[0];
-    const bestR = results.filter(r => r.system.stv).sort((a, b) => b.metrics.match - a.metrics.match)[0];
+    const today = results.find(r => r.system.id === 'current');
+    const stvs = results.filter(r => r.system.stv).sort((a, b) => b.metrics.match - a.metrics.match);
+    const bestR = stvs[0];
     const v = document.createElement('div'); v.className = 'verdict';
-    const gap = bestR.metrics.match - today.metrics.match;
     const name = inputType.name.toLowerCase();
-    const stillShut = today.metrics.shutOut.filter(g => bestR.metrics.shutOut.includes(g));
-    const fixed = today.metrics.shutOut.filter(g => !bestR.metrics.shutOut.includes(g));
     let html;
-    if (gap > 0) {
-      html = `<b>Today's council mirrors ${name} at ${today.metrics.match}/100. With STV (${bestR.system.short}) it would be ${bestR.metrics.match}/100.</b>`;
-      if (fixed.length) html += ` Today, ${fixed.join(' and ')} voters hold no seat at all; under STV they win representation.`;
-      if (stillShut.length) html += ` ${stillShut.join(' and ')} voters (${stillShut.map(g => pct(city[g])).join(', ')}) still win nothing: with everyone voting strictly by ${name}, they are below the quota in every contest. In real STV elections, votes transfer between groups, which usually helps groups this size.`;
+    if (today && bestR) {
+      const gap = bestR.metrics.match - today.metrics.match;
+      const stillShut = today.metrics.shutOut.filter(g => bestR.metrics.shutOut.includes(g));
+      const fixed = today.metrics.shutOut.filter(g => !bestR.metrics.shutOut.includes(g));
+      if (gap > 0) {
+        html = `<b>Today's council mirrors ${name} at ${today.metrics.match}/100. With STV (${bestR.system.short}) it would be ${bestR.metrics.match}/100.</b>`;
+        if (fixed.length) html += ` Today, ${fixed.join(' and ')} voters hold no seat at all; under STV they win representation.`;
+        if (stillShut.length) html += ` ${stillShut.join(' and ')} voters (${stillShut.map(g => pct(city[g])).join(', ')}) still win nothing: with everyone voting strictly by ${name}, they are below the quota in every contest. In real STV elections, votes transfer between groups, which usually helps groups this size.`;
+      } else {
+        html = `<b>With these numbers, today's rule lands at ${today.metrics.match}/100 and the STV layout${stvs.length > 1 ? 's score' : ' scores'} ${stvs.map(r => r.metrics.match).join(', ')}.</b> Today's at-large rule hands the runner-up group exactly 2 seats whether it has 5% or 45% of voters; here that fixed number happens to be about right. Three-seat districts need a group to reach 25% somewhere to win a seat, which is why the smaller STV layouts score lower for a thinly spread minority.`;
+      }
+    } else if (today) {
+      html = `<b>Today's council mirrors ${name} at ${today.metrics.match}/100.</b> Add an STV method in step 1 to compare.` + (today.metrics.shutOut.length ? ` ${today.metrics.shutOut.join(' and ')} voters hold no seat at all.` : '');
     } else {
-      html = `<b>With these numbers, today's rule lands at ${today.metrics.match}/100 and the STV layouts score ${results.filter(r => r.system.stv).map(r => r.metrics.match).join(', ')}.</b> Today's at-large rule hands the runner-up group exactly 2 seats whether it has 5% or 45% of voters; here that fixed number happens to be about right. Drag the sliders and watch the “Today” line below stay flat while the voters change. Three-seat districts need a group to reach 25% somewhere to win a seat, which is why the smaller STV layouts score lower for a thinly spread minority.`;
+      html = `<b>${results.map(r => `${r.system.short}: ${r.metrics.match}/100`).join(' · ')}.</b> Add “Today” in step 1 to compare with the current system.`;
     }
     v.innerHTML = html;
     el.appendChild(v);

@@ -15,15 +15,14 @@ const port = 8765;
 const server = spawn('python3', ['-m', 'http.server', String(port), '--directory', 'site'], { stdio: 'ignore' });
 await new Promise(r => setTimeout(r, 700));
 const SHOTS = [
-  ['party-light', 'type=party&theme=light'],
-  ['faction-light', 'type=faction&theme=light'],
-  ['party-dark', 'type=party&theme=dark'],
-  ['race-light', 'type=race&theme=light'],
-  ['race-mobile', 'type=race&theme=light', 420],
-  ['cars-light', 'type=cars&theme=light'],
-  ['tenure-dark', 'type=tenure&theme=dark'],
-  ['race-asian-20', 'type=race&city=Asian:20&focus=Asian&theme=light'],
-  ['race-details-open', 'type=race&theme=light&open=1', 1280, 9000],
+  ['default-light', 'type=party&theme=light'],                       // what a first-time visitor sees
+  ['default-mobile', 'type=party&theme=light', 420],
+  ['party-all-charts', 'type=party&theme=light&charts=all&systems=current,stv-atlarge,stv-5x3,stv-10x3&advanced=1&math=1', 1280, 4200],
+  ['faction-light', 'type=faction&theme=light&charts=all'],
+  ['party-dark', 'type=party&theme=dark&charts=all'],
+  ['race-light', 'type=race&theme=light&charts=all&advanced=1'],
+  ['race-asian-20', 'type=race&city=Asian:20&focus=Asian&theme=light&charts=all'],
+  ['race-details-open', 'type=race&theme=light&open=1&charts=all', 1280, 9000],
 ];
 try {
   for (const [name, hash, w = width, tall] of SHOTS) {

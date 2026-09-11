@@ -9,7 +9,7 @@ await new Promise(r => setTimeout(r, 700));
 const b = await launch();
 let ok = true;
 try {
-  await b.goto(`http://localhost:${port}/#type=race`);
+  await b.goto(`http://localhost:${port}/#type=race&advanced=1`);
   const r = await b.eval(`(async () => {
     const input = document.querySelector('#city-controls input[type=range]');
     const before = input; input.focus();

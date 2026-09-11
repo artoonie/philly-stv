@@ -1,6 +1,6 @@
 # Screenshot review rubric
 
-Run `npm run screenshot` and look at `screenshots/*.png`. Judge every state against two readers.
+Run `npm run screenshot` and look at `screenshots/*.png`. Judge every state against two readers. The landing view is deliberately minimal (Today vs 5 × 3 STV, ring cards only, sliders hidden); `default-*.png` is what a first-time visitor sees, `party-all-charts.png` is everything switched on.
 
 ## Reader 1 — will not read, does not know or care what proportional representation is
 Pass only if, within the first screen after the sliders, they can see without reading any paragraph:

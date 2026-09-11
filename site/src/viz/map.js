@@ -17,7 +17,7 @@ registerViz({
     const byDistrict = Object.fromEntries(GEO.features.map(f => [f.properties.district, f]));
     for (const r of results) {
       const m = document.createElement('div'); m.className = 'multiple';
-      m.innerHTML = `<h4>${r.system.short}${r.system.stv ? '<span class="stv-tag">STV</span>' : ''}</h4><p class="sub">${r.system.detail}</p>`;
+      m.innerHTML = `<h4>${r.system.short}${r.system.stv ? '<span class="stv-tag">STV</span>' : ''}</h4><p class="sub">${r.system.summary}</p>`;
       const svg = d3.select(m).append('svg').attr('viewBox', `0 0 ${W} ${H + 26}`).attr('role', 'img');
       const districtContests = r.contests.filter(c => c.districts.length < 10);
       const fillFor = {}; // district -> colour when single winner

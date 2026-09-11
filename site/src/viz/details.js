@@ -5,7 +5,8 @@ const fmtN = n => Math.round(n).toLocaleString();
 
 /** Skeptic's section: every contest, vote shares, winners, and STV rounds. */
 export function renderDetails(el, ctx) {
-  const { groups, colors, results, inputType, city } = ctx;
+  const { groups, colors, inputType, city } = ctx;
+  const results = ctx.allResults || ctx.results;
   el.innerHTML = '';
   // seats table (table-view twin of the donuts)
   const t = document.createElement('table'); t.className = 'grid';

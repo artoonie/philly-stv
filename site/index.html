@@ -26,39 +26,62 @@
     <p class="kicker">Philadelphia City Council · a simulation</p>
     <h1>What if City Council actually looked like Philly?</h1>
     <p class="lede">Today, 10 districts each pick one winner and the 7 at-large seats are split by a fixed rule: 5 for the biggest party, 2 for the runner-up. Below, compare that with <strong>proportional representation</strong>. The version shown here is the <em>single transferable vote</em> (STV): voters just rank candidates in order of preference, it is a form of ranked-choice voting, and Philadelphia's voting machines already support it.</p>
+    <ol class="howto">
+      <li><b>Choose what to compare.</b> Pick the voting methods (and charts) you want on screen.</li>
+      <li><b>Choose how to group voters.</b> By party, race, renters vs. owners, and more, using real data for each district.</li>
+      <li><b>See who wins.</b> Watch how each voting method changes who can get a seat.</li>
+    </ol>
     <p class="disclaimer"><strong>This is a simulation, not a prediction.</strong> To keep it simple, every voter in a group is assumed to vote only for candidates from that group (a Black voter always ranks Black candidates, a renter always ranks renters, and so on). Real people are not that predictable; the point is to see how each <em>system</em> responds when the electorate changes.</p>
   </div>
 </header>
 
 <main class="wrap">
+  <section id="compare" class="panel">
+    <div class="section-head">
+      <h2><span class="step">1</span> What do you want to see?</h2>
+      <p>Select one or more voting methods to compare. Add more charts if you want to dig deeper.</p>
+    </div>
+    <p class="pick-label" style="margin:10px 0 6px">Voting methods</p>
+    <div id="system-chips" class="method-cards" role="group" aria-label="Voting methods to compare"></div>
+    <p class="hint seatbar-key">Bars show the seats in each contest: <i class="k"></i> winner takes all or vote-for-5, <i class="k stv"></i> ranked choice (STV).</p>
+    <div class="pick-row"><span class="pick-label">Charts</span><div id="chart-chips" class="chips" role="group" aria-label="Charts to show"></div></div>
+  </section>
+
   <section id="who" class="panel">
     <div class="section-head">
-      <h2><span class="step">1</span> Who votes?</h2>
-      <p>Pick how to group voters, then drag the sliders. Starting values are real data for each council district.</p>
+      <h2><span class="step">2</span> How should we group voters?</h2>
+      <p>Each option uses real data for every council district.</p>
     </div>
     <div id="type-chips" class="chips" role="tablist" aria-label="Group voters by"></div>
-    <div id="city-controls" class="city-controls"></div>
-    <details id="district-controls-wrap" class="district-details">
-      <summary>Adjust individual districts</summary>
-      <p class="hint">Each district's sliders move that district only. The city-wide sliders above move every district by the same proportion.</p>
-      <div id="district-controls"></div>
-    </details>
+    <p id="type-note" class="hint"></p>
+    <button id="advanced-toggle" class="btn btn-cta" type="button" aria-expanded="false" aria-controls="advanced">Advanced: simulate a different breakdown of voters</button>
+    <div id="advanced" hidden>
+      <p class="hint" style="margin-top:12px">Drag a slider to imagine the city changing. The other groups shrink or grow to keep the total at 100%, and every district moves by the same proportion.</p>
+      <div id="city-controls" class="city-controls"></div>
+      <details id="district-controls-wrap" class="district-details">
+        <summary>Adjust individual districts</summary>
+        <p class="hint">Each district's sliders move that district only. The city-wide sliders above move every district by the same proportion.</p>
+        <div id="district-controls"></div>
+      </details>
+    </div>
   </section>
 
   <section id="results" class="panel">
     <div class="section-head">
-      <h2><span class="step">2</span> Who wins?</h2>
-      <p>Four ways to elect the council. The score is how closely the council mirrors the voters (100 = a perfect match).</p>
+      <h2><span class="step">3</span> Who wins?</h2>
+      <p>The score is how closely the council mirrors the voters (100 = a perfect match).</p>
     </div>
     <div id="viz-root"></div>
   </section>
 
   <section id="method" class="panel">
     <div class="section-head">
-      <h2><span class="step">3</span> Under the hood</h2>
-      <p>Everything a skeptic should want to check: how each seat was awarded, every STV count round, the assumptions, and the data.</p>
+      <h2><span class="step">4</span> Show the math</h2>
+      <p>For anyone who wants to check the work: how each seat was awarded, every STV count round, the assumptions, and the data.</p>
     </div>
-    <div id="details-root"></div>
+    <button id="math-toggle" class="btn btn-cta" type="button" aria-expanded="false" aria-controls="math">Show the math (advanced)</button>
+    <div id="math" hidden>
+    <div id="details-root" style="margin-top:14px"></div>
     <details class="assumptions" open>
       <summary>Assumptions and known limits</summary>
       <ul>
@@ -73,6 +96,7 @@
       </ul>
     </details>
     <div id="sources-root" class="sources"></div>
+    </div>
   </section>
 </main>
 

@@ -11,9 +11,12 @@ registerViz({
     const d3 = window.d3;
     const { groups, city, results, state } = ctx;
     const focus = state.focusGroup && groups.includes(state.focusGroup) ? state.focusGroup : [...groups].sort((a, b) => city[b] - city[a])[1] || groups[0];
-    const stvSystems = SYSTEMS.filter(s => s.stv);
-    const bestStv = results.filter(r => r.system.stv).sort((a, b) => b.metrics.match - a.metrics.match)[0].system.id;
+    const selected = results.map(r => r.system);
+    const hasToday = selected.some(s => s.id === 'current');
+    const stvSystems = selected.filter(s => s.stv);
+    const bestStv = stvSystems.length ? results.filter(r => r.system.stv).sort((a, b) => b.metrics.match - a.metrics.match)[0].system.id : null;
     const compare = state.compareSystem && stvSystems.some(s => s.id === state.compareSystem) ? state.compareSystem : bestStv;
+    const lineSystems = [hasToday ? SYSTEMS[0] : null, stvSystems.find(s => s.id === compare) || null].filter(Boolean);
 
     // controls: group select + which STV layout to compare with today
     const head = document.createElement('div'); head.className = 'controls-foot'; head.style.marginBottom = '8px';
@@ -22,18 +25,20 @@ registerViz({
     for (const g of groups) { const o = document.createElement('option'); o.value = g; o.textContent = g; o.selected = g === focus; sel.appendChild(o); }
     sel.addEventListener('change', () => ctx.setState({ focusGroup: sel.value }));
     lab.appendChild(sel); head.appendChild(lab);
-    const cmp = document.createElement('span'); cmp.textContent = 'Compare today with: ';
-    const chips = document.createElement('span'); chips.className = 'chips'; chips.style.margin = '0'; chips.style.display = 'inline-flex';
-    for (const s of stvSystems) {
-      const b = document.createElement('button'); b.className = 'chip'; b.type = 'button'; b.textContent = s.short; b.setAttribute('aria-selected', String(s.id === compare));
-      b.addEventListener('click', () => ctx.setState({ compareSystem: s.id })); chips.appendChild(b);
+    if (stvSystems.length > 1) {
+      const cmp = document.createElement('span'); cmp.textContent = hasToday ? 'Compare today with: ' : 'STV layout: ';
+      const chips = document.createElement('span'); chips.className = 'chips'; chips.style.margin = '0'; chips.style.display = 'inline-flex';
+      for (const s of stvSystems) {
+        const b = document.createElement('button'); b.className = 'chip'; b.type = 'button'; b.textContent = s.short; b.setAttribute('aria-selected', String(s.id === compare));
+        b.addEventListener('click', () => ctx.setState({ compareSystem: s.id })); chips.appendChild(b);
+      }
+      cmp.appendChild(chips); head.appendChild(cmp);
     }
-    cmp.appendChild(chips); head.appendChild(cmp);
     el.appendChild(head);
 
     // sweep the focus group from 0% to 100%
     const steps = d3.range(0, 1.0001, 0.01);
-    const series = [SYSTEMS[0], stvSystems.find(s => s.id === compare)].map(s => ({ id: s.id, short: s.short, pts: [] }));
+    const series = lineSystems.map(s => ({ id: s.id, short: s.short, pts: [] }));
     for (const v of steps) {
       const sh = setCityShare(state.shares, state.weights, groups, focus, v);
       const res = runAll(sh, state.weights, groups);
@@ -70,26 +75,30 @@ registerViz({
     // ribbon: which system is closer to fair at each vote share
     const rY = H - m.bottom + 28, rH = 10;
     const gap = (s, i) => Math.abs(s.pts[i].s - s.pts[i].v);
-    for (let i = 0; i < steps.length - 1; i++) {
+    if (series.length === 2) for (let i = 0; i < steps.length - 1; i++) {
       const g0 = gap(series[0], i), g1 = gap(series[1], i);
       const col = Math.abs(g0 - g1) < 1e-9 ? grid() : g0 < g1 ? systemColor(series[0].id) : systemColor(series[1].id);
       svg.append('rect').attr('x', x(steps[i])).attr('y', rY).attr('width', x(steps[i + 1]) - x(steps[i]) + 0.5).attr('height', rH).attr('fill', col);
     }
-    svg.append('text').attr('x', m.left).attr('y', rY + rH + 13).attr('font-size', 11).attr('fill', ink2()).text('Closer to fair at this size:');
     const avg = series.map(s => d3.mean(s.pts, p => Math.abs(p.s - p.v)));
-    const closerShare = d3.sum(d3.range(steps.length - 1), i => gap(series[1], i) < gap(series[0], i) - 1e-9 ? 1 : 0) / (steps.length - 1);
-    svg.append('text').attr('x', W - m.right).attr('y', rY + rH + 13).attr('text-anchor', 'end').attr('font-size', 11).attr('fill', ink2())
-      .text(`${series[1].short} is closer for ${pct(closerShare)} of sizes · average gap from fair: Today ${pct(avg[0], 1)}, ${series[1].short} ${pct(avg[1], 1)}`);
+    if (series.length === 2) {
+      svg.append('text').attr('x', m.left).attr('y', rY + rH + 13).attr('font-size', 11).attr('fill', ink2()).text('Closer to fair at this size:');
+      const closerShare = d3.sum(d3.range(steps.length - 1), i => gap(series[1], i) < gap(series[0], i) - 1e-9 ? 1 : 0) / (steps.length - 1);
+      svg.append('text').attr('x', W - m.right).attr('y', rY + rH + 13).attr('text-anchor', 'end').attr('font-size', 11).attr('fill', ink2())
+        .text(`${series[1].short} is closer for ${pct(closerShare)} of sizes · average gap from fair: ${series[0].short} ${pct(avg[0], 1)}, ${series[1].short} ${pct(avg[1], 1)}`);
+    } else {
+      svg.append('text').attr('x', m.left).attr('y', rY + rH + 13).attr('font-size', 11).attr('fill', ink2()).text(`Average gap from fair: ${pct(avg[0], 1)}. Select a second voting method in step 1 to compare.`);
+    }
     // labels at the line ends, pushed apart
     const labels = series.map(s => ({ s, y: y(s.pts[s.pts.length - 1].s) })).sort((a, b) => a.y - b.y);
     if (labels.length > 1 && labels[1].y - labels[0].y < 16) labels[1].y = labels[0].y + 16;
-    for (const l of labels) svg.append('text').attr('x', x(1) + 8).attr('y', l.y).attr('dy', '0.35em').attr('font-size', 12).attr('font-weight', 700).attr('fill', systemColor(l.s.id)).text(l.s.id === 'current' ? 'Today' : l.s.short);
+    for (const l of labels) svg.append('text').attr('x', x(1) + 8).attr('y', l.y).attr('dy', '0.35em').attr('font-size', 12).attr('font-weight', 700).attr('fill', systemColor(l.s.id)).text(l.s.short);
 
     // "now" callout: what each system gives at the current share
     const i0 = d3.bisector(d => d.v).center(series[0].pts, city[focus]);
     svg.append('line').attr('x1', x(city[focus])).attr('x2', x(city[focus])).attr('y1', y(0)).attr('y2', y(1)).attr('stroke', ink()).attr('opacity', .45);
     const box = svg.append('g').attr('transform', `translate(${x(city[focus]) + (city[focus] > 0.6 ? -190 : 8)},${m.top + 2})`);
-    const lines = [`${focus} today: ${pct(city[focus])} of voters`, ...series.map(s => `${s.id === 'current' ? 'Today' : s.short}: ${s.pts[i0].n} of ${s.pts[i0].total} seats`)];
+    const lines = [`${focus} today: ${pct(city[focus])} of voters`, ...series.map(s => `${s.short}: ${s.pts[i0].n} of ${s.pts[i0].total} seats`)];
     box.append('rect').attr('width', 182).attr('height', 14 * lines.length + 10).attr('rx', 6).attr('fill', 'var(--surface)').attr('stroke', grid());
     box.selectAll('text').data(lines).join('text').attr('x', 8).attr('y', (d, i) => 15 + i * 14).attr('font-size', 11).attr('font-weight', (d, i) => i === 0 ? 700 : 500)
       .attr('fill', (d, i) => i === 0 ? ink() : systemColor(series[i - 1].id)).text(d => d);
@@ -100,9 +109,10 @@ registerViz({
     svg.append('rect').attr('x', m.left).attr('y', m.top).attr('width', W - m.left - m.right).attr('height', H - m.top - m.bottom).attr('fill', 'transparent')
       .on('mousemove', (ev) => {
         const [mx] = d3.pointer(ev); const i = bisect(series[0].pts, x.invert(mx));
-        const g0 = Math.abs(series[0].pts[i].s - series[0].pts[i].v), g1 = Math.abs(series[1].pts[i].s - series[1].pts[i].v);
-        tip.show(`<b>If ${focus} were ${pct(series[0].pts[i].v)} of voters</b><br>` + series.map(s => `${s.id === 'current' ? 'Today' : s.short}: ${s.pts[i].n} of ${s.pts[i].total} seats (${pct(s.pts[i].s)})`).join('<br>') + `<br>Closer to fair: ${Math.abs(g0 - g1) < 1e-9 ? 'tie' : g0 < g1 ? 'Today' : series[1].short}`, ev);
+        let closer = '';
+        if (series.length === 2) { const g0 = gap(series[0], i), g1 = gap(series[1], i); closer = `<br>Closer to fair: ${Math.abs(g0 - g1) < 1e-9 ? 'tie' : g0 < g1 ? series[0].short : series[1].short}`; }
+        tip.show(`<b>If ${focus} were ${pct(series[0].pts[i].v)} of voters</b><br>` + series.map(s => `${s.short}: ${s.pts[i].n} of ${s.pts[i].total} seats (${pct(s.pts[i].s)})`).join('<br>') + closer, ev);
       }).on('mouseleave', () => tip.hide());
-    legend(el, [{ kind: 'line', color: systemColor('current'), label: 'Today' }, { kind: 'line', color: systemColor(compare), label: series[1].short + ' (STV)' }, { kind: 'line', color: muted(), label: 'Perfectly fair (dashed)' }, { color: 'color-mix(in oklab, ' + systemColor('current') + ' 25%, transparent)', label: 'Shaded = gap from fair (less is better)' }]);
+    legend(el, [...series.map(s => ({ kind: 'line', color: systemColor(s.id), label: s.short + (s.id === 'current' ? '' : ' (STV)') })), { kind: 'line', color: muted(), label: 'Perfectly fair (dashed)' }, { color: 'color-mix(in oklab, ' + systemColor('current') + ' 25%, transparent)', label: 'Shaded = gap from fair (less is better)' }]);
   },
 });

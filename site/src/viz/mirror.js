@@ -23,7 +23,8 @@ registerViz({
     rows.append('rect').attr('x', m.left - 4).attr('width', 4).attr('y', -y.bandwidth() / 2).attr('height', y.bandwidth()).attr('rx', 2).attr('fill', g => colors[g]);
     rows.append('line').attr('x1', x(0)).attr('x2', x(1)).attr('stroke', grid());
     // connecting line from voters to today's dot (emphasis on the gap)
-    rows.append('line').attr('x1', g => x(city[g])).attr('x2', g => x(results[0].seats[g] / results[0].totalSeats))
+    const today = results.find(r => r.system.id === 'current');
+    if (today) rows.append('line').attr('x1', g => x(city[g])).attr('x2', g => x(today.seats[g] / today.totalSeats))
       .attr('stroke', systemColor('current')).attr('stroke-width', 2).attr('stroke-dasharray', '2 3');
     for (const r of results) {
       rows.append('circle').attr('cx', g => x(r.seats[g] / r.totalSeats)).attr('r', r.system.id === 'current' ? 7 : 6)

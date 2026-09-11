@@ -153,3 +153,36 @@ select.sel { font: inherit; font-size: 14px; padding: 4px 8px; border-radius: 8p
   .card .score b { font-size: 34px; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .comp-bar .seg { transition: none; } }
+
+/* how-to strip + step 1 pickers + advanced toggle */
+.howto { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 18px; padding: 0; margin: 14px 0 18px; list-style: none; counter-reset: step; max-width: 900px; }
+.howto li { counter-increment: step; position: relative; padding-left: 38px; font-size: 15px; color: var(--ink-2); }
+.howto li b { color: var(--ink); display: block; }
+.howto li::before { content: counter(step); position: absolute; left: 0; top: 1px; width: 28px; height: 28px; border-radius: 50%; background: var(--ink); color: var(--surface); display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+.pick-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 8px; }
+.pick-label { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; min-width: 120px; }
+.pick-row .chips { margin: 0; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); font-weight: 600; }
+.chip[aria-pressed="true"]::before { content: "✓ "; }
+.btn-cta { margin-top: 10px; font-size: 14px; font-weight: 600; padding: 9px 16px; border-color: var(--accent); color: var(--accent-ink); background: color-mix(in oklab, var(--accent) 10%, transparent); }
+.btn-cta[aria-expanded="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+#type-note { margin: 4px 0 0; }
+
+/* big selectable cards for voting methods */
+.method-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.method-card { text-align: left; font: inherit; cursor: pointer; border: 1.5px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--ink); padding: 12px 14px 12px 40px; position: relative; display: flex; flex-direction: column; gap: 4px; }
+.method-card:hover { border-color: var(--axis); }
+.method-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.method-card::before { content: ""; position: absolute; left: 13px; top: 15px; width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid var(--axis); background: var(--surface); }
+.method-card[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: color-mix(in oklab, var(--accent) 6%, var(--surface)); }
+.method-card[aria-pressed="true"]::before { background: var(--accent); border-color: var(--accent); }
+.method-card[aria-pressed="true"]::after { content: ""; position: absolute; left: 18px; top: 17px; width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.method-card .name { font-weight: 700; font-size: 15px; line-height: 1.2; }
+.method-card .desc { font-size: 13px; color: var(--ink-2); line-height: 1.35; }
+.method-card .seats { font-size: 12px; color: var(--muted); }
+.method-card .seatbar { display: flex; gap: 2px; margin-top: 4px; }
+.method-card .seatbar i { display: block; height: 8px; border-radius: 2px; background: var(--axis); }
+.method-card .seatbar i.stv { background: var(--accent); }
+.seatbar-key { margin: -6px 0 12px; }
+.seatbar-key i.k { display: inline-block; width: 18px; height: 8px; border-radius: 2px; background: var(--axis); vertical-align: middle; }
+.seatbar-key i.k.stv { background: var(--accent); }

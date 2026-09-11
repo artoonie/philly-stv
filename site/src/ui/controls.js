@@ -63,14 +63,13 @@ export function mountCityControls(el, ctx, { onCityChange, onReset }) {
   const { groups, city, colors, inputType } = ctx;
   el.innerHTML = '';
   const q = document.createElement('p'); q.className = 'hint'; q.style.margin = '0';
-  q.textContent = `${inputType.question} City-wide, counted in ${inputType.unit}. Drag a slider: the other groups shrink or grow to keep the total at 100%, and every district moves by the same proportion.`;
+  q.textContent = `${inputType.question} City-wide, counted in ${inputType.unit}.`;
   const bar = compBar(groups, city, colors);
   const grid = sliderRows(groups, city, colors, onCityChange);
   const foot = document.createElement('div'); foot.className = 'controls-foot';
   const reset = document.createElement('button'); reset.className = 'btn'; reset.type = 'button'; reset.textContent = 'Reset to real data';
   reset.addEventListener('click', onReset);
-  const note = document.createElement('span'); note.textContent = inputType.note || '';
-  foot.append(reset, note);
+  foot.append(reset);
   el.append(q, bar, grid, foot);
   return { update(ctx) { updateCompBar(bar, ctx.groups, ctx.city, true); updateSliderRows(grid, ctx.city); } };
 }
