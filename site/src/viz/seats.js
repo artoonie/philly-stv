@@ -39,7 +39,9 @@ registerViz({
       m.innerHTML = `<h4>${r.system.short}${r.system.stv ? '<span class="stv-tag">STV</span>' : ''}</h4><p class="sub">${r.totalSeats} seats · mirror score ${r.metrics.match}</p>`;
       const W = 220; const { pts, dot, height } = hemicycle(r.totalSeats, W);
       const seatList = groups.flatMap(g => Array(r.seats[g]).fill(g));
-      const svg = d3.select(m).append('svg').attr('viewBox', `0 0 ${W} ${height}`).attr('role', 'img');
+      // pad the viewBox by one dot radius so the outer seats are never clipped
+      const pad = dot + 2;
+      const svg = d3.select(m).append('svg').attr('viewBox', `${-pad} ${-pad} ${W + 2 * pad} ${height + pad}`).attr('role', 'img');
       svg.selectAll('circle').data(pts.map((p, i) => ({ ...p, g: seatList[i] }))).join('circle')
         .attr('cx', d => d.x).attr('cy', d => d.y).attr('r', dot).attr('fill', d => colors[d.g]).attr('stroke', 'var(--surface)').attr('stroke-width', 1.5)
         .on('mousemove', (ev, d) => tip.show(`<b>${d.g}</b> seat · ${r.seats[d.g]} of ${r.totalSeats} (${pct(r.seats[d.g] / r.totalSeats)}); voters ${pct(city[d.g], 1)}`, ev)).on('mouseleave', () => tip.hide());

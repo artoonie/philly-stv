@@ -18,6 +18,7 @@ export async function launch({ port = 9333, width = 1280, height = 900 } = {}) {
   ws.onmessage = (m) => { const msg = JSON.parse(m.data); if (msg.id && pending.has(msg.id)) { pending.get(msg.id)(msg); pending.delete(msg.id); } else if (msg.method) events.push(msg); };
   const send = (method, params = {}) => new Promise(res => { const i = ++id; pending.set(i, res); ws.send(JSON.stringify({ id: i, method, params })); });
   await send('Page.enable'); await send('Runtime.enable');
+  await send('Network.enable'); await send('Network.setCacheDisabled', { cacheDisabled: true }); // always render the current files
   return {
     events,
     async goto(url, { settle = 600 } = {}) {

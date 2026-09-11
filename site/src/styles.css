@@ -57,8 +57,8 @@ a { color: var(--accent-ink); }
 /* composition bar + sliders */
 .city-controls { display: grid; gap: 14px; }
 .comp-bar { display: flex; height: 34px; border-radius: 8px; overflow: hidden; gap: 2px; background: var(--surface); }
-.comp-bar .seg { display: grid; place-items: center; color: #fff; font-size: 13px; font-weight: 600; min-width: 0; overflow: hidden; white-space: nowrap; text-shadow: 0 0 2px rgba(0,0,0,.35); transition: flex .15s; }
-.comp-bar .seg small { font-weight: 400; opacity: .9; margin-left: 4px; }
+.comp-bar .seg { container-type: inline-size; display: flex; align-items: center; justify-content: center; gap: 4px; color: #fff; font-size: 13px; font-weight: 600; min-width: 0; overflow: hidden; white-space: nowrap; text-shadow: 0 0 2px rgba(0,0,0,.35); transition: flex .15s; }
+.comp-bar .seg small { font-weight: 400; opacity: .9; }
 .slider-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px 22px; }
 .slider-row { display: grid; grid-template-columns: 14px 1fr 3.2em; align-items: center; gap: 10px; font-size: 14px; }
 .slider-row .swatch { width: 14px; height: 14px; border-radius: 4px; }
@@ -186,3 +186,35 @@ select.sel { font: inherit; font-size: 14px; padding: 4px 8px; border-radius: 8p
 .seatbar-key { margin: -6px 0 12px; }
 .seatbar-key i.k { display: inline-block; width: 18px; height: 8px; border-radius: 2px; background: var(--axis); vertical-align: middle; }
 .seatbar-key i.k.stv { background: var(--accent); }
+
+/* two-column layout: controls stay in view on the left while results update on the right */
+@media (min-width: 1100px) {
+  .layout { display: grid; grid-template-columns: 400px minmax(0, 1fr); gap: 0 22px; align-items: start; max-width: 1400px; }
+  .controls-col { position: sticky; top: 0; max-height: 100vh; overflow-y: auto; padding-top: 22px; margin-top: -22px; scrollbar-width: thin; }
+  .controls-col .panel { padding: 18px 16px 14px; }
+  .controls-col h2 { font-size: 21px; }
+  .controls-col .step { width: 26px; height: 26px; font-size: 13px; }
+  .controls-col .method-cards { grid-template-columns: 1fr; gap: 8px; }
+  .controls-col .method-card { padding: 10px 12px 10px 36px; }
+  .controls-col .method-card .desc { font-size: 12.5px; }
+  .controls-col .slider-grid { grid-template-columns: 1fr; }
+  .controls-col .district-grid { grid-template-columns: 1fr; }
+  .results-col .cards { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+}
+/* change feedback */
+@keyframes results-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--accent) 45%, transparent); } 100% { box-shadow: 0 0 0 14px transparent; } }
+.panel.pulse { animation: results-pulse .7s ease-out; }
+.fly-clone { position: fixed; z-index: 50; pointer-events: none; transform-origin: top left; border-radius: 12px; overflow: hidden; }
+@media (prefers-reduced-motion: reduce) { .panel.pulse { animation: none; } }
+
+/* voters strip above the council cards */
+.voters-strip { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; align-items: start; margin-bottom: 14px; padding: 12px 14px; border-radius: 10px; background: var(--surface-2); }
+.voters-label b { display: block; font-size: 15px; }
+.voters-label span { font-size: 12px; color: var(--muted); line-height: 1.25; display: block; }
+.voters-bar .comp-bar { height: 30px; background: transparent; }
+.voters-bar .legend { margin-top: 6px; }
+@media (max-width: 640px) { .voters-strip { grid-template-columns: 1fr; gap: 6px; } }
+.cards { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+/* bar labels: drop the name, then the number, as a segment gets narrow */
+@container (max-width: 96px) { .comp-bar .seg .nm { display: none; } }
+@container (max-width: 34px) { .comp-bar .seg small { display: none; } }

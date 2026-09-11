@@ -83,7 +83,7 @@ function methodCards(el, selected, onChange) {
     const contests = sys.build();
     const districtSeats = contests.filter(c => c.districts.length < 10).reduce((n, c) => n + c.seats, 0);
     const atLarge = contests.filter(c => c.districts.length === 10).reduce((n, c) => n + c.seats, 0);
-    const b = document.createElement('button'); b.className = 'method-card'; b.type = 'button';
+    const b = document.createElement('button'); b.className = 'method-card'; b.type = 'button'; b.dataset.toggle = `system:${sys.id}`;
     const on = selected.includes(sys.id); b.setAttribute('aria-pressed', String(on));
     const seatsText = atLarge ? `${districtSeats} district seats + ${atLarge} at-large = ${districtSeats + atLarge} members` : `${districtSeats} members, all from districts`;
     const bars = contests.map(c => `<i class="${c.method === 'stv' ? 'stv' : ''}" style="flex:${c.seats}" title="${c.name}: ${c.seats} seat${c.seats > 1 ? 's' : ''} (${c.method === 'stv' ? 'ranked choice' : c.method === 'limited' ? 'vote for 5, top 7 win' : 'winner takes all'})"></i>`).join('');
@@ -100,7 +100,7 @@ function methodCards(el, selected, onChange) {
 function toggleChips(el, items, selected, onChange, { minOne = true } = {}) {
   el.innerHTML = '';
   for (const it of items) {
-    const b = document.createElement('button'); b.className = 'chip'; b.type = 'button'; b.textContent = it.label; b.title = it.title || '';
+    const b = document.createElement('button'); b.className = 'chip'; b.type = 'button'; b.textContent = it.label; b.title = it.title || ''; b.dataset.toggle = `chart:${it.id}`;
     const on = selected.includes(it.id); b.setAttribute('aria-pressed', String(on));
     b.addEventListener('click', () => {
       let next = on ? selected.filter(x => x !== it.id) : items.map(i => i.id).filter(id => id === it.id || selected.includes(id));
@@ -109,6 +109,48 @@ function toggleChips(el, items, selected, onChange, { minOne = true } = {}) {
     });
     el.appendChild(b);
   }
+}
+
+/* ---- change feedback: fly a new card/chart out of the button that created it, and back into it when removed ---- */
+const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const targetFor = (kind, id) => kind === 'system' ? document.querySelector(`#viz-headline .card[data-system="${id}"]`) || document.querySelector('#results') : document.querySelector(`#viz-${id}`);
+const buttonFor = (kind, id) => document.querySelector(`[data-toggle="${kind}:${id}"]`);
+function flyIn(kind, id) {
+  const to = targetFor(kind, id), from = buttonFor(kind, id);
+  if (!to || !from || reduceMotion()) return;
+  const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+  if (b.width === 0) return;
+  to.animate([
+    { transform: `translate(${a.left - b.left}px, ${a.top - b.top}px) scale(${Math.max(0.05, a.width / b.width)}, ${Math.max(0.05, a.height / b.height)})`, opacity: 0.2 },
+    { transform: 'none', opacity: 1 },
+  ], { duration: 520, easing: 'cubic-bezier(.2,.8,.2,1)' });
+  to.style.transformOrigin = 'top left';
+}
+function flyOut(kind, id) {
+  const el = targetFor(kind, id), from = buttonFor(kind, id);
+  if (!el || !from || reduceMotion()) return;
+  const b = el.getBoundingClientRect(), a = from.getBoundingClientRect();
+  const clone = el.cloneNode(true); clone.classList.add('fly-clone');
+  Object.assign(clone.style, { left: b.left + 'px', top: b.top + 'px', width: b.width + 'px', height: b.height + 'px', margin: 0 });
+  document.body.appendChild(clone);
+  clone.animate([
+    { transform: 'none', opacity: 1 },
+    { transform: `translate(${a.left - b.left}px, ${a.top - b.top}px) scale(${Math.max(0.05, a.width / b.width)}, ${Math.max(0.05, a.height / b.height)})`, opacity: 0 },
+  ], { duration: 420, easing: 'cubic-bezier(.4,0,.8,.4)' }).onfinish = () => clone.remove();
+}
+function pulseResults() {
+  const p = document.querySelector('#results'); if (!p || reduceMotion()) return;
+  p.classList.remove('pulse'); void p.offsetWidth; p.classList.add('pulse');
+}
+function applySelection(kind, next) {
+  const key = kind === 'system' ? 'systems' : 'charts';
+  const prev = state[key];
+  const removed = prev.filter(id => !next.includes(id)), added = next.filter(id => !prev.includes(id));
+  for (const id of removed) flyOut(kind, id);
+  state[key] = next;
+  render({ controls: false });
+  for (const id of added) flyIn(kind, id);
+  pulseResults();
 }
 
 let rafId = 0, cityCtl = null, districtCtl = null;
@@ -122,10 +164,10 @@ const handlers = {
 function render({ controls = true } = {}) {
   const ctx = context();
   writeHash();
-  methodCards($('#system-chips'), state.systems, next => { state.systems = next; render({ controls: false }); });
-  toggleChips($('#chart-chips'), allViz().map(v => ({ id: v.id, label: v.title })), state.charts, next => { state.charts = next; render({ controls: false }); });
+  methodCards($('#system-chips'), state.systems, next => applySelection('system', next));
+  toggleChips($('#chart-chips'), allViz().map(v => ({ id: v.id, label: v.title })), state.charts, next => applySelection('chart', next));
   if (controls) {
-    renderTypeChips($('#type-chips'), state, id => { loadType(id); render(); });
+    renderTypeChips($('#type-chips'), state, id => { loadType(id); render(); pulseResults(); });
     $('#type-note').textContent = ctx.inputType.note || '';
     cityCtl = mountCityControls($('#city-controls'), ctx, handlers);
     districtCtl = mountDistrictControls($('#district-controls'), ctx, handlers);

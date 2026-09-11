@@ -1,5 +1,6 @@
 import { registerViz, tooltip, pct } from './registry.js';
 import { surface } from './palette.js';
+import { compBar } from '../ui/controls.js';
 
 function donut(el, groups, values, colors, { size = 190, thickness = 26, label, reference } = {}) {
   const d3 = window.d3;
@@ -35,22 +36,25 @@ function donut(el, groups, values, colors, { size = 190, thickness = 26, label, 
 registerViz({
   id: 'headline', order: 10,
   title: 'Voters vs. council',
-  lede: 'The thick ring is the council; the thin ring around it is the voters. Where the colours line up, the council mirrors the city. Where they don’t, a group is over- or under-represented.',
+  lede: 'The bar is the voters. Each ring is a council: the thick ring is the seats, the thin ring around it repeats the voters. Where the colours line up, the council mirrors the city.',
   render(el, ctx) {
     const { groups, colors, city, results, inputType, totalPeople } = ctx;
+    // voters: one full-width bar (same as the slider bar in step 2), clearly not a council
+    const strip = document.createElement('div'); strip.className = 'voters-strip';
+    const lab = document.createElement('div'); lab.className = 'voters-label';
+    lab.innerHTML = `<b>Voters</b><span>${inputType.question}</span>`;
+    const barWrap = document.createElement('div'); barWrap.className = 'voters-bar';
+    barWrap.appendChild(compBar(groups, city, colors));
+    const keys = document.createElement('div'); keys.className = 'legend';
+    keys.innerHTML = groups.map(g => `<span class="key"><i style="background:${colors[g]}"></i>${g} ${pct(city[g])}</span>`).join('');
+    barWrap.appendChild(keys);
+    strip.append(lab, barWrap);
+    el.appendChild(strip);
     const cards = document.createElement('div'); cards.className = 'cards';
-    // voters
-    const vc = document.createElement('div'); vc.className = 'card voters';
-    vc.innerHTML = `<h4>Voters</h4><div class="sub">${inputType.question} (real data, then your sliders)</div>`;
-    donut(vc, groups, city, colors, { label: '' });
-    const vl = document.createElement('div'); vl.className = 'foot';
-    vl.innerHTML = groups.map(g => `<span style="white-space:nowrap"><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${colors[g]};margin-right:4px"></i>${g} ${pct(city[g])}</span>`).join(' &nbsp; ');
-    vc.appendChild(vl);
-    cards.appendChild(vc);
     const best = Math.max(...results.filter(r => r.system.stv).map(r => r.metrics.match), -1);
     for (const r of results) {
-      const c = document.createElement('div'); c.className = 'card' + (r.system.stv && r.metrics.match === best ? ' best' : '');
-      c.innerHTML = `<h4>${r.system.short}${r.system.stv ? '<span class="stv-tag">STV</span>' : ''}</h4><div class="sub">${r.system.summary}</div>`;
+      const c = document.createElement('div'); c.className = 'card' + (r.system.stv && r.metrics.match === best ? ' best' : ''); c.dataset.system = r.system.id;
+      c.innerHTML = `<h4>${r.system.short}${r.system.stv ? '<span class="stv-tag">STV</span>' : ''}</h4><div class="sub">${r.system.summary ?? r.system.detail ?? ''}</div>`;
       const seatCounts = Object.fromEntries(groups.map(g => [g, r.seats[g]]));
       donut(c, groups, seatCounts, colors, { label: 'seats', reference: city });
       const score = document.createElement('div'); score.className = 'score';

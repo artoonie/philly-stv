@@ -10,7 +10,8 @@ await new Promise(r => setTimeout(r, 700));
 const b = await launch({ width: 1200, height: 900 });
 try {
   // 1. Social preview: the "Voters vs council" block for the default (party) view, light theme.
-  await b.setViewport(1200, 900);
+  // Rendered below the two-column breakpoint so the block spans the full width.
+  await b.setViewport(1060, 900);
   await b.goto(`http://localhost:${port}/#type=party&theme=light`);
   const rect = await b.eval(`(() => {
     const el = document.querySelector('#viz-headline'); el.scrollIntoView();

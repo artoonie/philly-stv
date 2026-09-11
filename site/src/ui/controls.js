@@ -13,7 +13,7 @@ export function renderTypeChips(el, state, onSelect) {
   }
 }
 
-function compBar(groups, shares, colors, showLabels = true) {
+export function compBar(groups, shares, colors, showLabels = true) {
   const bar = document.createElement('div'); bar.className = 'comp-bar';
   for (const g of groups) {
     const seg = document.createElement('div'); seg.className = 'seg'; seg.dataset.group = g; seg.style.background = colors[g];
@@ -27,7 +27,7 @@ function updateCompBar(bar, groups, shares, showLabels) {
     const g = seg.dataset.group, v = Math.max(shares[g], 0);
     seg.style.flex = `${v} 0 0`; seg.title = `${g}: ${pct(v, 1)}`;
     if (!showLabels) continue;
-    seg.innerHTML = v > 0.08 ? `${g}<small>${pct(v)}</small>` : v > 0.04 ? `<small>${pct(v)}</small>` : '';
+    seg.innerHTML = `<span class="nm">${g}</span><small>${pct(v)}</small>`; // visibility is decided by segment width in CSS
   }
 }
 
