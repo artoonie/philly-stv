@@ -76,7 +76,8 @@ export function mountCityControls(el, ctx, { onCityChange, onReset }) {
 
 /** Per-district sliders. Returns { update(ctx) }. */
 export function mountDistrictControls(el, ctx, { onDistrictChange }) {
-  const { groups, shares, weights, colors, inputType } = ctx;
+  const { groups, colors, inputType } = ctx;
+  const { shares, weights } = ctx.districts;
   el.innerHTML = '';
   const grid = document.createElement('div'); grid.className = 'district-grid';
   const parts = {};
@@ -91,5 +92,5 @@ export function mountDistrictControls(el, ctx, { onDistrictChange }) {
     parts[d] = { bar, rows };
   }
   el.appendChild(grid);
-  return { update(ctx) { for (const d of Object.keys(parts)) { updateCompBar(parts[d].bar, ctx.groups, ctx.shares[d], false); updateSliderRows(parts[d].rows, ctx.shares[d]); } } };
+  return { update(ctx) { for (const d of Object.keys(parts)) { updateCompBar(parts[d].bar, ctx.groups, ctx.districts.shares[d], false); updateSliderRows(parts[d].rows, ctx.districts.shares[d]); } } };
 }

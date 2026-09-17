@@ -17,7 +17,7 @@ await new Promise(r => setTimeout(r, 700));
 const SHOTS = [
   ['default-light', 'type=party&theme=light'],                       // what a first-time visitor sees
   ['default-mobile', 'type=party&theme=light', 420],
-  ['party-all-charts', 'type=party&theme=light&charts=all&systems=current,stv-atlarge,stv-5x3,stv-10x3&advanced=1&math=1', 1280, 4200],
+  ['party-all-charts', 'type=party&theme=light&charts=all&systems=current,stv-atlarge,stv-7x3,stv-5x5&advanced=1&math=1', 1280, 4200],
   ['faction-light', 'type=faction&theme=light&charts=all'],
   ['party-dark', 'type=party&theme=dark&charts=all'],
   ['race-light', 'type=race&theme=light&charts=all&advanced=1'],

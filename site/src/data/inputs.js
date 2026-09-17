@@ -1,5 +1,5 @@
 // Input types: each one is a way of slicing the electorate into groups, with
-// real per-district counts. Add a new input type by appending to INPUT_TYPES.
+// real counts per cell (the pieces where the three district maps overlap; see model/electorate.js). Add a new input type by appending to INPUT_TYPES.
 import { ACS, ACS_RELEASE } from './acs.js';
 import { RACE_VAP_2020 } from './race.js';
 import { PARTY_2023_ATLARGE, PARTY_2024_PRESIDENT, FACTION_2023_PRIMARY } from './party.js';
@@ -7,14 +7,14 @@ import { PARTY_2023_ATLARGE, PARTY_2024_PRESIDENT, FACTION_2023_PRIMARY } from '
 const acsSource = (table, what) => ({
   label: `American Community Survey ${ACS_RELEASE.replace('ACS ', '')}, table ${table} (${what})`,
   url: `https://censusreporter.org/tables/${table}/`,
-  method: 'Block-group estimates split between council districts by area of overlap (scripts/build_data.py).',
+  method: 'Block-group estimates split between districts in proportion to the 2020 Census population of the blocks on each side of a line (scripts/build_data.py).',
 });
 
 export const INPUT_TYPES = [
   {
     id: 'party', name: 'Party', unit: 'votes', question: 'Which party do voters back?',
     palette: 'party', counts: PARTY_2023_ATLARGE,
-    source: { label: 'Votes in the November 2023 Council at-large general election (the last time Democrats, Working Families and Republicans all ran citywide), by council district', url: 'https://opendataphilly.org/datasets/election-results/', method: 'Division-level results from the City Commissioners joined to their official division-to-council-district table. Because voters could mark 5 names and the parties fielded 5, 2 and 2 candidates, each party’s votes are divided by the number of candidates it ran (its “votes per candidate”). Using each party’s top candidate instead changes the shares by under 1 point.' },
+    source: { label: 'Votes in the November 2023 Council at-large general election (the last time Democrats, Working Families and Republicans all ran citywide), by council district', url: 'https://opendataphilly.org/datasets/election-results/', method: 'Division-level results from the City Commissioners joined to their official division-to-council-district table, and to the 7- and 5-district plans by the 2020 precinct each division overlaps. Because voters could mark 5 names and the parties fielded 5, 2 and 2 candidates, each party’s votes are divided by the number of candidates it ran (its “votes per candidate”). Using each party’s top candidate instead changes the shares by under 1 point.' },
     note: 'Presidential results hide Philadelphia’s real divides, so this uses the 2023 at-large council race, the only citywide contest where the Working Families Party competed. Party registration by district is not published.',
   },
   {
@@ -26,7 +26,7 @@ export const INPUT_TYPES = [
   {
     id: 'race', name: 'Race / ethnicity', unit: 'adults', question: 'What race or ethnicity are voters?',
     counts: RACE_VAP_2020,
-    source: { label: '2020 Census (PL 94-171), voting-age population by Hispanic origin and race', url: 'https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html', method: 'Every census block assigned to the 2024 council district containing it (reconciles to the redistricting ordinance within 2 people per district).' },
+    source: { label: '2020 Census (PL 94-171), voting-age population by Hispanic origin and race', url: 'https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html', method: 'Every census block assigned to the 2024 council district containing it (reconciles to the redistricting ordinance within 2 people per district) and to the 7- and 5-district plans by its 2020 precinct.' },
     note: 'White, Black and Asian are non-Hispanic; Hispanic is of any race; Other includes multiracial, Native American and Pacific Islander adults.',
   },
   { id: 'gender', name: 'Gender', unit: 'adults', question: 'Men or women?', counts: ACS.gender, source: acsSource('B01001', 'sex by age, 18+') },
@@ -45,9 +45,9 @@ export const INPUT_TYPES = [
   },
 ];
 
-/** Turn raw counts into { groups, shares, weights }. */
+/** Turn raw counts into { groups, shares, weights }, keyed like `counts` (by cell). */
 export function electorateFromCounts(counts) {
-  const districts = Object.keys(counts).sort((a, b) => +a - +b);
+  const districts = Object.keys(counts);
   const groups = Object.keys(counts[districts[0]]);
   const shares = {}, weights = {};
   for (const d of districts) {

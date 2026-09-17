@@ -1,5 +1,5 @@
 import { INPUT_TYPES, electorateFromCounts } from './data/inputs.js';
-import { cityShares, setCityShare, setDistrictShare, cloneShares } from './model/electorate.js';
+import { cityShares, setCityShare, setDistrictShare, districtView, cloneShares } from './model/electorate.js';
 import { runAll, SYSTEMS } from './model/systems.js';
 import { groupColors } from './viz/palette.js';
 import { allViz } from './viz/registry.js';
@@ -14,7 +14,7 @@ import './viz/map.js';
 
 const $ = s => document.querySelector(s);
 const DEFAULT_TYPE = 'party';
-const DEFAULT_SYSTEMS = ['current', 'stv-5x3'];
+const DEFAULT_SYSTEMS = ['current', 'stv-7x3'];
 const DEFAULT_CHARTS = ['headline'];
 const state = { typeId: DEFAULT_TYPE, shares: null, weights: null, groups: null, focusGroup: null, compareSystem: null, overrides: [],
   systems: DEFAULT_SYSTEMS.slice(), charts: DEFAULT_CHARTS.slice(), advanced: false, math: false };
@@ -27,7 +27,7 @@ function loadType(typeId) {
   return t;
 }
 
-/* URL state: #type=race&systems=current,stv-5x3&charts=headline,map&city=Black:45&d7=Hispanic:60&focus=Asian&compare=stv-10x3&advanced=1 */
+/* URL state: #type=race&systems=current,stv-7x3&charts=headline,map&city=Black:45&d7=Hispanic:60&focus=Asian&compare=stv-5x5&advanced=1 */
 function readHash() {
   const p = new URLSearchParams(location.hash.slice(1));
   loadType(p.get('type') || DEFAULT_TYPE);
@@ -63,7 +63,7 @@ function writeHash() {
 }
 function applyOverride(o) {
   if (o.kind === 'city') state.shares = setCityShare(state.shares, state.weights, state.groups, o.group, o.value);
-  else state.shares = setDistrictShare(state.shares, state.groups, o.district, o.group, o.value);
+  else state.shares = setDistrictShare(state.shares, state.weights, state.groups, o.district, o.group, o.value);
   state.overrides = state.overrides.filter(x => !(x.kind === o.kind && x.district === o.district && x.group === o.group)).concat(o);
 }
 
@@ -73,7 +73,8 @@ function context() {
   const allResults = runAll(state.shares, state.weights, state.groups);
   const results = allResults.filter(r => state.systems.includes(r.system.id));
   const colors = groupColors(inputType, state.groups);
-  return { state, inputType, groups: state.groups, shares: state.shares, weights: state.weights, city, results, allResults, colors, setState };
+  const districts = districtView(state.shares, state.weights, state.groups); // today's council districts, for the per-district sliders
+  return { state, inputType, groups: state.groups, shares: state.shares, weights: state.weights, districts, city, results, allResults, colors, setState };
 }
 
 /* Step 1: big multi-select cards for voting methods (title + explanation), chips for charts */
@@ -81,8 +82,8 @@ function methodCards(el, selected, onChange) {
   el.innerHTML = '';
   for (const sys of SYSTEMS) {
     const contests = sys.build();
-    const districtSeats = contests.filter(c => c.districts.length < 10).reduce((n, c) => n + c.seats, 0);
-    const atLarge = contests.filter(c => c.districts.length === 10).reduce((n, c) => n + c.seats, 0);
+    const districtSeats = contests.filter(c => !c.atLarge).reduce((n, c) => n + c.seats, 0);
+    const atLarge = contests.filter(c => c.atLarge).reduce((n, c) => n + c.seats, 0);
     const b = document.createElement('button'); b.className = 'method-card'; b.type = 'button'; b.dataset.toggle = `system:${sys.id}`;
     const on = selected.includes(sys.id); b.setAttribute('aria-pressed', String(on));
     const seatsText = atLarge ? `${districtSeats} district seats + ${atLarge} at-large = ${districtSeats + atLarge} members` : `${districtSeats} members, all from districts`;

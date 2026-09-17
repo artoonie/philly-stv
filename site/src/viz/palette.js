@@ -3,7 +3,7 @@
 // conventional semantic colours (blue / red) plus violet for everyone else.
 const SLOTS = ['--s1', '--s2', '--s3', '--s4', '--s5', '--s6', '--s7', '--s8'];
 const PARTY = { Democrats: '--s1', Republicans: '--s8', 'Working Families': '--s7', Other: '--s7' };
-const SYSTEM_VARS = { current: '--sys-today', 'stv-atlarge': '--sys-1', 'stv-5x3': '--sys-2', 'stv-10x3': '--sys-3' };
+const SYSTEM_VARS = { current: '--sys-today', 'stv-atlarge': '--sys-1', 'stv-7x3': '--sys-2', 'stv-5x5': '--sys-3' };
 
 export function cssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
