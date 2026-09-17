@@ -1,63 +1,62 @@
 #!/usr/bin/env python3
-"""Rebuild site/src/data/party.js from the election-result CSVs in scripts/data/.
+"""Rebuild site/src/data/party.js from the division-level election results in scripts/data/.
 
-All three CSVs come from the City Commissioners' division-level results (OpenDataPhilly
-"Election Results" ArcGIS layer), joined to the Commissioners' official
-division-to-council-district table (division_to_district_2022.csv). Every division matched.
+The result CSVs come from the City Commissioners (scripts/fetch_elections.py). Each division is placed in
+a cell ("<council district>-<7-plan district>-<5-plan district>") by scripts/data/division_to_cell.csv,
+which build_data.py derives from the Commissioners' official division-to-council-district table and the
+two plans' precinct assignments. Every division matched.
 """
 import csv, json, os, collections
 HERE = os.path.dirname(os.path.abspath(__file__))
 D = lambda f: os.path.join(HERE, 'data', f)
 OUT = os.path.join(HERE, '..', 'site', 'src', 'data', 'party.js')
 
-def by_district(path, party_map, group_of=None):
+# cell id = the columns after `division`, in order: council district, then each plan (same order as PLANS in build_data.py)
+CELL = {r['division']: '-'.join(v for k, v in r.items() if k != 'division') for r in csv.DictReader(open(D('division_to_cell.csv')))}
+cell_key = lambda c: tuple(int(x) for x in c.split('-'))
+
+def by_cell(path, group_of, order):
     out = collections.defaultdict(lambda: collections.defaultdict(int))
     for r in csv.DictReader(open(path)):
-        d = r['district']
-        if not d.isdigit(): continue
-        g = group_of(r) if group_of else party_map.get(r['party'])
-        if g is None: continue
-        out[d][g] += int(float(r['votes']))
-    return {d: dict(v) for d, v in sorted(out.items(), key=lambda x: int(x[0]))}
+        cell = CELL.get(r['division'])  # non-geographic provisional-ballot buckets have no division
+        g = group_of(r)
+        if cell is None or g is None: continue
+        out[cell][g] += int(r['votes'])
+    return {c: {g: out[c].get(g, 0) for g in order} for c in sorted(out, key=cell_key)}
 
 # 1. 2023 general, council at-large: votes per candidate fielded (D 5, R 2, WFP 2)
-PARTY_NAMES = {'Democratic': 'Democrats', 'Working Families': 'Working Families', 'Republican': 'Republicans'}
-raw = by_district(D('atlarge_2023_by_district.csv'), PARTY_NAMES)
-fielded = collections.defaultdict(set)
-for r in csv.DictReader(open(D('atlarge_2023_by_district.csv'))):
-    if r['party'] in PARTY_NAMES: fielded[PARTY_NAMES[r['party']]].add(r['candidate'])
-n_fielded = {p: len(c) for p, c in fielded.items()}
-per_cand = {d: {p: round(v / n_fielded[p]) for p, v in row.items()} for d, row in raw.items()}
-# order groups: Democrats, Working Families, Republicans
+PARTY_NAMES = {'DEM': 'Democrats', 'WFP': 'Working Families', 'REP': 'Republicans'}
 order = ['Democrats', 'Working Families', 'Republicans']
-per_cand = {d: {p: row[p] for p in order} for d, row in per_cand.items()}
-raw = {d: {p: row[p] for p in order} for d, row in raw.items()}
+raw = by_cell(D('atlarge_2023_by_division.csv'), lambda r: PARTY_NAMES.get(r['party']), order)
+fielded = collections.defaultdict(set)
+for r in csv.DictReader(open(D('atlarge_2023_by_division.csv'))):
+    if r['party'] in PARTY_NAMES: fielded[PARTY_NAMES[r['party']]].add(r['candidate'])
+n_fielded = {p: len(fielded[p]) for p in order}
+per_cand = {c: {p: round(v / n_fielded[p]) for p, v in row.items()} for c, row in raw.items()}
 
-# 2. 2024 general, president / 3. 2023 general, mayor
-pres, mayor = {}, {}
-for r in csv.DictReader(open(D('party_by_district.csv'))):
-    tgt = pres if r['election'].startswith('2024') else mayor
-    tgt[r['district']] = {'Democrats': int(r['dem']), 'Republicans': int(r['rep']), 'Other': int(r['other'])}
+# 2. 2024 general, president
+def pres_group(r):
+    return {'DEM': 'Democrats', 'REP': 'Republicans'}.get(r['party'], 'Other')
+pres = by_cell(D('president_2024_by_division.csv'), pres_group, ['Democrats', 'Republicans', 'Other'])
 
-# 4. 2023 primary, mayor: voters grouped by the candidate they chose (+ Republican primary voters)
+# 3. 2023 primary, mayor: voters grouped by the candidate they chose (+ Republican primary voters)
 LANES = [('CHERELLE', 'Parker'), ('RHYNHART', 'Rhynhart'), ('GYM', 'Gym'), ('DOMB', 'Domb'), ('JEFF', 'Jeff Brown')]
 def lane(r):
     c = r['candidate'].upper()
-    if r['party'] == 'Republican': return 'Republican primary'
-    if r['party'] != 'Democratic': return None
+    if r['party'] == 'REP': return 'Republican primary'
+    if r['party'] != 'DEM': return None
     for key, name in LANES:
         if key in c: return name
     return 'Other Democrats'
-faction = by_district(D('mayor_primary_2023_by_district.csv'), None, lane)
 forder = ['Parker', 'Rhynhart', 'Gym', 'Domb', 'Jeff Brown', 'Other Democrats', 'Republican primary']
-faction = {d: {g: row.get(g, 0) for g in forder} for d, row in faction.items()}
+faction = by_cell(D('mayor_primary_2023_by_division.csv'), lane, forder)
 
+dump = lambda o: json.dumps(o, separators=(',', ':')).replace('},', '},\n ')
 with open(OUT, 'w') as f:
-    f.write('// Generated by scripts/build_party.py from scripts/data/*.csv — actual votes by council district.\n')
+    f.write('// Generated by scripts/build_party.py from scripts/data/*_by_division.csv — actual votes, keyed by cell\n')
+    f.write('// ("<council district>-<7-plan district>-<5-plan district>").\n')
     f.write(f'export const ATLARGE_2023_CANDIDATES_FIELDED = {json.dumps(n_fielded)};\n')
-    f.write('export const PARTY_2023_ATLARGE = ' + json.dumps(per_cand, indent=1) + ';\n')
-    f.write('export const PARTY_2023_ATLARGE_RAW = ' + json.dumps(raw, indent=1) + ';\n')
-    f.write('export const PARTY_2024_PRESIDENT = ' + json.dumps(pres, indent=1) + ';\n')
-    f.write('export const PARTY_2023_MAYOR = ' + json.dumps(mayor, indent=1) + ';\n')
-    f.write('export const FACTION_2023_PRIMARY = ' + json.dumps(faction, indent=1) + ';\n')
-print('wrote', OUT, n_fielded)
+    f.write('export const PARTY_2023_ATLARGE = ' + dump(per_cand) + ';\n')
+    f.write('export const PARTY_2024_PRESIDENT = ' + dump(pres) + ';\n')
+    f.write('export const FACTION_2023_PRIMARY = ' + dump(faction) + ';\n')
+print('wrote', OUT, n_fielded, len(per_cand), 'cells')

@@ -59,6 +59,6 @@ export function renderSources(el) {
   }
   el.appendChild(ul);
   const p = document.createElement('p');
-  p.innerHTML = 'District boundaries: <a href="https://opendataphilly.org/datasets/city-council-districts/" target="_blank" rel="noopener">City of Philadelphia, Council Districts 2024</a>.</code>.';
+  p.innerHTML = 'District boundaries: <a href="https://opendataphilly.org/datasets/city-council-districts/" target="_blank" rel="noopener">City of Philadelphia, Council Districts 2024</a>. The 7-district and 5-district plans were drawn in <a href="https://davesredistricting.org/" target="_blank" rel="noopener">Dave’s Redistricting</a> (CC BY-SA 4.0) by assigning 2020 Census voting districts (precincts); the assignments are in <code>scripts/data/plans/</code>.';
   el.appendChild(p);
 }

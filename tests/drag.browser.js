@@ -28,7 +28,7 @@ try {
     const before = input; input.focus();
     for (const v of [70, 75, 80]) { input.value = v; input.dispatchEvent(new Event('input', { bubbles: true })); }
     await new Promise(r => requestAnimationFrame(() => setTimeout(r, 50)));
-    return { sameElement: document.querySelector('#district-controls .district-card input[type=range]') === before, value: input.value, d1: +(100 * window.__sim.state.shares['1'][input.getAttribute('aria-label').replace(' share','')]).toFixed(1) };
+    return { sameElement: document.querySelector('#district-controls .district-card input[type=range]') === before, value: input.value, d1: +(100 * window.__sim.context().districts.shares['1'][input.getAttribute('aria-label').replace(' share','')]).toFixed(1) };
   })()`);
   console.log(JSON.stringify(r2));
   ok = ok && r2.sameElement && r2.value === '80' && Math.abs(r2.d1 - 80) < 0.01;

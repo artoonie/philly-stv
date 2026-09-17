@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cityShares, setCityShare, setDistrictShare } from '../site/src/model/electorate.js';
+import { cityShares, setCityShare, setDistrictShare, districtView } from '../site/src/model/electorate.js';
 
 const groups = ['D', 'R'];
 const shares = { 1: { D: 0.9, R: 0.1 }, 2: { D: 0.8, R: 0.2 } };
@@ -36,8 +36,21 @@ test('multi-group city adjustment converges and keeps rows normalized', () => {
   assert.ok(Math.abs(c.A / c.B - before.A / before.B) < 0.05);
 });
 
-test('district adjustment only touches that district', () => {
-  const s = setDistrictShare(shares, groups, 1, 'R', 0.5);
-  assert.deepEqual(s[2], shares[2]);
-  assert.ok(Math.abs(s[1].D - 0.5) < 1e-9);
+// cells are "<council district>-<7-plan district>-<5-plan district>"
+const cellShares = { '1-1-1': { D: 0.9, R: 0.1 }, '1-2-1': { D: 0.7, R: 0.3 }, '2-2-1': { D: 0.6, R: 0.4 } };
+const cellWeights = { '1-1-1': 100, '1-2-1': 300, '2-2-1': 200 };
+
+test('district view sums cells up to the districts of a map', () => {
+  const v = districtView(cellShares, cellWeights, groups);
+  assert.deepEqual(v.weights, { 1: 400, 2: 200 });
+  assert.ok(Math.abs(v.shares[1].D - 0.75) < 1e-9);
+  const p7 = districtView(cellShares, cellWeights, groups, 'p7');
+  assert.ok(Math.abs(p7.shares[2].D - 0.66) < 1e-9);
+});
+
+test('district adjustment moves the whole council district and nothing else', () => {
+  const s = setDistrictShare(cellShares, cellWeights, groups, 1, 'R', 0.5);
+  assert.deepEqual(s['2-2-1'], cellShares['2-2-1']);
+  assert.ok(Math.abs(districtView(s, cellWeights, groups).shares[1].R - 0.5) < 1e-6);
+  assert.ok(s['1-2-1'].R > s['1-1-1'].R, 'cells keep their relative lean');
 });

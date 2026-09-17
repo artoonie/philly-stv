@@ -1,17 +1,21 @@
 import { plurality, limitedVoting, stv } from './count.js';
-import { DISTRICT_IDS } from './electorate.js';
+import { DISTRICT_IDS, districtOf } from './electorate.js';
 
-// "Nearby" pairings used to combine 10 districts into 5 (no fancy redistricting):
-// 1+2 South Philly & Center City, 3+4 West & Northwest-west, 5+7 North Philly & Kensington,
-// 8+9 Northwest & Upper North, 6+10 Northeast.
-export const MERGED_DISTRICTS = [
-  { id: 'A', name: 'South & Center City (1+2)', districts: [1, 2] },
-  { id: 'B', name: 'West & Northwest (3+4)', districts: [3, 4] },
-  { id: 'C', name: 'North & Kensington (5+7)', districts: [5, 7] },
-  { id: 'D', name: 'Germantown to Oak Lane (8+9)', districts: [8, 9] },
-  { id: 'E', name: 'Northeast (6+10)', districts: [6, 10] },
-];
+// Two proposed multi-member maps, drawn in Dave's Redistricting from 2020 precincts with equal
+// populations (scripts/data/plans/). Keys match PLANS in scripts/build_data.py and PLAN_GEO in
+// data/plans.geojson.js; `areas` must list every district number of the plan, because the contests
+// are built from it. Area names are rough guides to where each district sits, written by hand after
+// looking at the map: when a plan is replaced its numbering changes, so re-check every name
+// (README, "Swapping in a new plan").
+export const PLANS = {
+  p7: { name: '7-district plan', areas: { 1: 'Far Northeast', 2: 'Northwest', 3: 'South', 4: 'Center City & River Wards', 5: 'Lower Northeast', 6: 'North', 7: 'West' } },
+  p5: { name: '5-district plan', areas: { 1: 'Northeast', 2: 'Northwest & Upper North', 3: 'South & Center City', 4: 'Kensington & Lower Northeast', 5: 'West & North Central' } },
+};
 
+const councilDistricts = () => DISTRICT_IDS.map(d => ({ id: `d${d}`, name: `District ${d}`, map: 'council', district: d, seats: 1, method: 'plurality' }));
+const planDistricts = (map, seats) => Object.entries(PLANS[map].areas).map(([d, area]) => ({ id: `${map}-${d}`, name: `District ${d} (${area})`, map, district: +d, seats, method: 'stv' }));
+
+// `map` is the district map a system draws its (non-at-large) contests on.
 export const SYSTEMS = [
   {
     id: 'current',
@@ -19,50 +23,47 @@ export const SYSTEMS = [
     name: 'Today’s system',
     summary: '10 single-member districts + 7 at-large seats by limited voting (vote for 5, top 7 win)',
     detail: 'How Philly votes now. Each of 10 districts elects one member, winner takes all. For the 7 at-large seats you pick 5 names and the top 7 win, which by rule gives 5 to the biggest party and 2 to the runner-up.',
-    stv: false,
-    build: () => [
-      ...DISTRICT_IDS.map(d => ({ id: `d${d}`, name: `District ${d}`, districts: [d], seats: 1, method: 'plurality' })),
-      { id: 'al', name: 'At-large', districts: DISTRICT_IDS, seats: 7, method: 'limited', votesPerVoter: 5 },
-    ],
+    stv: false, map: 'council',
+    build: () => [...councilDistricts(), { id: 'al', name: 'At-large', atLarge: true, seats: 7, method: 'limited', votesPerVoter: 5 }],
   },
   {
     id: 'stv-atlarge',
     short: 'STV at-large',
-    name: 'Option 1 (STV at-large): STV for the 7 at-large seats',
-    summary: 'Keep the 10 single-member districts; elect the 7 at-large seats with STV (one city-wide 7-winner contest)',
-    detail: 'Smallest change. Keep the 10 one-member districts as they are; elect the 7 at-large seats in one city-wide ranked-choice contest so they split in proportion to the vote.',
-    stv: true,
-    build: () => [
-      ...DISTRICT_IDS.map(d => ({ id: `d${d}`, name: `District ${d}`, districts: [d], seats: 1, method: 'plurality' })),
-      { id: 'al', name: 'At-large', districts: DISTRICT_IDS, seats: 7, method: 'stv' },
-    ],
+    name: 'Option 1 (STV at-large): 9 at-large seats by STV',
+    summary: 'Keep the 10 single-member districts; elect 9 at-large seats with STV (one city-wide 9-winner contest)',
+    detail: 'Smallest change. Keep the 10 one-member districts as they are; grow the at-large bench from 7 to 9 and elect it in one city-wide ranked-choice contest so the seats split in proportion to the vote.',
+    stv: true, map: 'council',
+    build: () => [...councilDistricts(), { id: 'al', name: 'At-large', atLarge: true, seats: 9, method: 'stv' }],
   },
   {
-    id: 'stv-5x3',
-    short: '5 × 3 STV',
-    name: 'Option 2 (5 × 3 STV): 5 districts, 3 seats each',
-    summary: 'No at-large seats; neighbouring districts paired into 5, each electing 3 members by STV (15 total)',
-    detail: 'Fewer, bigger districts. Pair today’s districts with their neighbours to make 5, and let each elect 3 members by ranked choice. No at-large seats.',
-    stv: true,
-    build: () => MERGED_DISTRICTS.map(m => ({ id: `m${m.id}`, name: m.name, districts: m.districts, seats: 3, method: 'stv' })),
+    id: 'stv-7x3',
+    short: '7 × 3 STV',
+    name: 'Option 2 (7 × 3 STV): 7 districts, 3 seats each',
+    summary: 'No at-large seats; a new map of 7 equal-population districts, each electing 3 members by STV (21 total)',
+    detail: 'A new map of 7 bigger districts with equal populations, each electing 3 members by ranked choice, so a district’s minority gets a seat too. No at-large seats.',
+    stv: true, map: 'p7',
+    build: () => planDistricts('p7', 3),
   },
   {
-    id: 'stv-10x3',
-    short: '10 × 3 STV',
-    name: 'Option 3 (10 × 3 STV): 10 districts, 3 seats each',
-    summary: 'Today’s 10 districts, each electing 3 members by STV (30 total)',
-    detail: 'Same districts, three voices each. Keep today’s 10 districts but let each elect 3 members by ranked choice, so a district’s minority gets a seat too. A bigger council.',
-    stv: true,
-    build: () => DISTRICT_IDS.map(d => ({ id: `d${d}`, name: `District ${d}`, districts: [d], seats: 3, method: 'stv' })),
+    id: 'stv-5x5',
+    short: '5 × 5 STV',
+    name: 'Option 3 (5 × 5 STV): 5 districts, 5 seats each',
+    summary: 'No at-large seats; a new map of 5 equal-population districts, each electing 5 members by STV (25 total)',
+    detail: 'A new map of 5 large districts with equal populations, each electing 5 members by ranked choice. With 5 seats, a group needs about a sixth of a district’s votes to win one. No at-large seats.',
+    stv: true, map: 'p5',
+    build: () => planDistricts('p5', 5),
   },
 ];
 
-/** Vote totals for a set of districts: shares × weights. */
+const inContest = (contest, cell) => contest.atLarge || districtOf(cell, contest.map) === contest.district;
+
+/** Vote totals for a contest: shares × weights over the cells inside it. */
 export function contestVotes(contest, shares, weights, groups) {
   const votes = Object.fromEntries(groups.map(g => [g, 0]));
-  for (const d of contest.districts) {
-    const w = weights[d] ?? 1;
-    for (const g of groups) votes[g] += (shares[d][g] ?? 0) * w;
+  for (const c of Object.keys(shares)) {
+    if (!inContest(contest, c)) continue;
+    const w = weights[c] ?? 1;
+    for (const g of groups) votes[g] += (shares[c][g] ?? 0) * w;
   }
   return groups.map(g => ({ id: g, votes: votes[g] }));
 }
@@ -90,7 +91,7 @@ export function runAll(shares, weights, groups) {
 }
 
 export function cityVotes(shares, weights, groups) {
-  const gv = contestVotes({ districts: DISTRICT_IDS }, shares, weights, groups);
+  const gv = contestVotes({ atLarge: true }, shares, weights, groups);
   const total = gv.reduce((s, g) => s + g.votes, 0);
   return Object.fromEntries(gv.map(g => [g.id, g.votes / (total || 1)]));
 }
